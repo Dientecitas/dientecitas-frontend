@@ -11,14 +11,33 @@ const ScheduleCalendar = ({ onView, onEdit, onDelete }) => {
   const { timeSlots, loading } = useSchedule();
   
   const [currentDate, setCurrentDate] = useState(() => {
-    const date = new Date(selectedDate);
-    return isNaN(date.getTime()) ? new Date() : date;
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      return isNaN(date.getTime()) ? new Date() : date;
+    }
+    return new Date();
   });
 
-  // Sincronizar fecha seleccionada
+  // Sincronizar fecha seleccionada solo cuando currentDate cambia internamente
   useEffect(() => {
-    setSelectedDate(currentDate.toISOString().split('T')[0]);
-  }, [currentDate, setSelectedDate]);
+    const dateString = currentDate.toISOString().split('T')[0];
+    if (selectedDate !== dateString) {
+      setSelectedDate(dateString);
+    }
+  }, [currentDate]); // Removed setSelectedDate from dependencies to prevent loop
+
+  // Sincronizar cuando selectedDate cambia externamente
+  useEffect(() => {
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      if (!isNaN(date.getTime())) {
+        const currentDateString = currentDate.toISOString().split('T')[0];
+        if (selectedDate !== currentDateString) {
+          setCurrentDate(date);
+        }
+      }
+    }
+  }, [selectedDate]); // Only depend on selectedDate
 
   // Navegación de fechas
   const navigateDate = (direction) => {
@@ -52,12 +71,7 @@ const ScheduleCalendar = ({ onView, onEdit, onDelete }) => {
 
   // Calcular fecha de inicio del período
   const getStartDate = () => {
-    // Ensure currentDate is valid
-    if (!currentDate || isNaN(currentDate.getTime())) {
-      return new Date();
-    }
-    
-    const date = new Date(currentDate.getTime());
+    const date = new Date(currentDate);
     
     switch (ui.calendarView) {
       case 'day':
@@ -65,11 +79,9 @@ const ScheduleCalendar = ({ onView, onEdit, onDelete }) => {
       case 'week':
         const dayOfWeek = date.getDay();
         const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        const weekStart = new Date(date.getFullYear(), date.getMonth(), diff);
-        return isNaN(weekStart.getTime()) ? new Date() : weekStart;
+        return new Date(date.getFullYear(), date.getMonth(), diff);
       case 'month':
-        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-        return isNaN(monthStart.getTime()) ? new Date() : monthStart;
+        return new Date(date.getFullYear(), date.getMonth(), 1);
       default:
         return date;
     }
@@ -79,21 +91,15 @@ const ScheduleCalendar = ({ onView, onEdit, onDelete }) => {
   const getEndDate = () => {
     const startDate = getStartDate();
     
-    // Ensure startDate is valid
-    if (!startDate || isNaN(startDate.getTime())) {
-      return new Date();
-    }
-    
     switch (ui.calendarView) {
       case 'day':
         return startDate;
       case 'week':
         const endWeek = new Date(startDate);
         endWeek.setDate(endWeek.getDate() + 6);
-        return isNaN(endWeek.getTime()) ? new Date() : endWeek;
+        return endWeek;
       case 'month':
-        const monthEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-        return isNaN(monthEnd.getTime()) ? new Date() : monthEnd;
+        return new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
       default:
         return startDate;
     }
@@ -111,25 +117,15 @@ const ScheduleCalendar = ({ onView, onEdit, onDelete }) => {
   // Generar días de la semana
   const generateWeekDays = () => {
     const startDate = getStartDate();
-    
-    // Ensure startDate is valid
-    if (!startDate || isNaN(startDate.getTime())) {
-      return [new Date()];
-    }
-    
     const days = [];
     
     for (let i = 0; i < 7; i++) {
       const day = new Date(startDate);
       day.setDate(day.getDate() + i);
-      
-      // Only add valid dates
-      if (!isNaN(day.getTime())) {
-        days.push(day);
-      }
+      days.push(day);
     }
     
-    return days.length > 0 ? days : [new Date()];
+    return days;
   };
 
   // Renderizar vista de día
