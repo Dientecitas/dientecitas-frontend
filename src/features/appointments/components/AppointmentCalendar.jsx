@@ -1,431 +1,233 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, MapPin, Eye, Edit, X } from 'lucide-react';
-import { useAppointmentContext } from '../store/appointmentContext';
-import { useAppointments } from '../hooks/useAppointments';
-import { formatDate, formatTime, getStatusColor, getStatusText } from '../utils/appointmentHelpers';
-import LoadingButton from '../../../shared/components/ui/LoadingButton';
+import React, { useState } from 'react';
+import { 
+  ChevronLeft,
+  ChevronRight,
+  Calendar
+} from 'lucide-react';
 import Card from '../../../shared/components/ui/Card';
+import LoadingButton from '../../../shared/components/ui/LoadingButton';
 
-const AppointmentCalendar = ({ onView, onEdit, onCancel }) => {
-  const { appointments, filters } = useAppointmentContext();
-  const { loading } = useAppointments();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('month'); // 'month', 'week', 'day'
+const AppointmentCalendar = ({ 
+  appointments = [],
+  onDateSelect,
+  onViewChange,
+  currentDate = new Date(),
+  loading = false 
+}) => {
+  const [selectedDate, setSelectedDate] = useState(currentDate);
+  const [viewMode, setViewMode] = useState('Mes'); // Mes, Semana, Día
 
-  // Generate calendar data based on current view
-  const calendarData = useMemo(() => {
-    const filteredAppointments = appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.fecha);
-      
-      switch (viewMode) {
-        case 'month':
-          return appointmentDate.getMonth() === currentDate.getMonth() &&
-                 appointmentDate.getFullYear() === currentDate.getFullYear();
-        case 'week':
-          const weekStart = new Date(currentDate);
-          weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          return appointmentDate >= weekStart && appointmentDate <= weekEnd;
-        case 'day':
-          return appointmentDate.toDateString() === currentDate.toDateString();
-        default:
-          return true;
-      }
-    });
+  // Obtener información del mes actual
+  const monthNames = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
 
-    return filteredAppointments;
-  }, [appointments, currentDate, viewMode]);
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-  // Navigation functions
-  const navigatePrevious = () => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'month':
-        newDate.setMonth(currentDate.getMonth() - 1);
-        break;
-      case 'week':
-        newDate.setDate(currentDate.getDate() - 7);
-        break;
-      case 'day':
-        newDate.setDate(currentDate.getDate() - 1);
-        break;
-    }
-    setCurrentDate(newDate);
+  const currentMonth = selectedDate.getMonth();
+  const currentYear = selectedDate.getFullYear();
+
+  // Navegar entre meses
+  const navigateMonth = (direction) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(currentMonth + direction);
+    setSelectedDate(newDate);
   };
 
-  const navigateNext = () => {
-    const newDate = new Date(currentDate);
-    switch (viewMode) {
-      case 'month':
-        newDate.setMonth(currentDate.getMonth() + 1);
-        break;
-      case 'week':
-        newDate.setDate(currentDate.getDate() + 7);
-        break;
-      case 'day':
-        newDate.setDate(currentDate.getDate() + 1);
-        break;
-    }
-    setCurrentDate(newDate);
-  };
+  // Obtener días del mes
+  const getDaysInMonth = () => {
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  // Get calendar title based on view mode
-  const getCalendarTitle = () => {
-    const options = { 
-      year: 'numeric', 
-      month: 'long',
-      ...(viewMode === 'day' && { day: 'numeric' })
-    };
-    
-    if (viewMode === 'week') {
-      const weekStart = new Date(currentDate);
-      weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      
-      return `${weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-    }
-    
-    return currentDate.toLocaleDateString('es-ES', options);
-  };
-
-  // Generate calendar grid for month view
-  const generateMonthGrid = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
     const days = [];
-    const currentDateObj = new Date(startDate);
+
+    // Días del mes anterior
+    const prevMonth = new Date(currentYear, currentMonth - 1, 0);
+    const daysInPrevMonth = prevMonth.getDate();
     
-    for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
-      const dayAppointments = calendarData.filter(apt => 
-        new Date(apt.fecha).toDateString() === currentDateObj.toDateString()
-      );
-      
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       days.push({
-        date: new Date(currentDateObj),
-        isCurrentMonth: currentDateObj.getMonth() === month,
-        isToday: currentDateObj.toDateString() === new Date().toDateString(),
-        appointments: dayAppointments
+        day: daysInPrevMonth - i,
+        isCurrentMonth: false,
+        date: new Date(currentYear, currentMonth - 1, daysInPrevMonth - i)
       });
-      
-      currentDateObj.setDate(currentDateObj.getDate() + 1);
     }
-    
+
+    // Días del mes actual
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push({
+        day,
+        isCurrentMonth: true,
+        date: new Date(currentYear, currentMonth, day)
+      });
+    }
+
+    // Días del próximo mes
+    const remainingCells = 42 - days.length; // 6 semanas × 7 días
+    for (let day = 1; day <= remainingCells; day++) {
+      days.push({
+        day,
+        isCurrentMonth: false,
+        date: new Date(currentYear, currentMonth + 1, day)
+      });
+    }
+
     return days;
   };
 
-  // Render appointment card
-  const renderAppointmentCard = (appointment, isCompact = false) => (
-    <div
-      key={appointment.id}
-      className={`p-2 rounded-lg border-l-4 mb-2 cursor-pointer hover:shadow-md transition-shadow ${getStatusColor(appointment.estado)} bg-white`}
-      onClick={() => onView(appointment)}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-3 h-3 text-gray-500" />
-            <span className="text-sm font-medium text-gray-900">
-              {formatTime(appointment.horaInicio)}
-            </span>
-            {!isCompact && (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.estado)}`}>
-                {getStatusText(appointment.estado)}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2 mb-1">
-            <User className="w-3 h-3 text-gray-500" />
-            <span className="text-sm text-gray-700 truncate">
-              {appointment.paciente?.nombres} {appointment.paciente?.apellidos}
-            </span>
-          </div>
-          
-          {!isCompact && appointment.dentista && (
-            <div className="flex items-center gap-2 mb-1">
-              <User className="w-3 h-3 text-blue-500" />
-              <span className="text-xs text-gray-600 truncate">
-                Dr. {appointment.dentista.nombres} {appointment.dentista.apellidos}
-              </span>
-            </div>
-          )}
-          
-          {!isCompact && appointment.consultorio && (
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3 h-3 text-green-500" />
-              <span className="text-xs text-gray-600 truncate">
-                {appointment.consultorio.nombre}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {!isCompact && (
-          <div className="flex gap-1 ml-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(appointment);
-              }}
-              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-              title="Ver detalles"
-            >
-              <Eye className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(appointment);
-              }}
-              className="p-1 text-gray-400 hover:text-green-600 transition-colors"
-              title="Editar"
-            >
-              <Edit className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancel(appointment);
-              }}
-              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-              title="Cancelar"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // Render month view
-  const renderMonthView = () => {
-    const days = generateMonthGrid();
-    const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-    return (
-      <div className="bg-white rounded-lg border">
-        {/* Week day headers */}
-        <div className="grid grid-cols-7 border-b">
-          {weekDays.map(day => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 border-r last:border-r-0">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7">
-          {days.map((day, index) => (
-            <div
-              key={index}
-              className={`min-h-[120px] p-2 border-r border-b last:border-r-0 ${
-                !day.isCurrentMonth ? 'bg-gray-50' : 'bg-white'
-              } ${day.isToday ? 'bg-blue-50' : ''}`}
-            >
-              <div className={`text-sm font-medium mb-2 ${
-                day.isToday ? 'text-blue-600' : 
-                day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-              }`}>
-                {day.date.getDate()}
-              </div>
-              
-              <div className="space-y-1">
-                {day.appointments.slice(0, 3).map(appointment => 
-                  renderAppointmentCard(appointment, true)
-                )}
-                {day.appointments.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center py-1">
-                    +{day.appointments.length - 3} más
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  // Obtener citas para una fecha específica
+  const getAppointmentsForDate = (date) => {
+    const dateString = date.toISOString().split('T')[0];
+    return appointments.filter(apt => {
+      const aptDate = new Date(apt.fecha).toISOString().split('T')[0];
+      return aptDate === dateString;
+    });
   };
 
-  // Render week view
-  const renderWeekView = () => {
-    const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-    
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + i);
-      weekDays.push(day);
-    }
+  const days = getDaysInMonth();
+  const today = new Date();
 
+  if (loading) {
     return (
-      <div className="bg-white rounded-lg border">
-        <div className="grid grid-cols-7 border-b">
-          {weekDays.map(day => {
-            const dayAppointments = calendarData.filter(apt => 
-              new Date(apt.fecha).toDateString() === day.toDateString()
-            );
-            
-            return (
-              <div key={day.toISOString()} className="p-4 border-r last:border-r-0">
-                <div className={`text-center mb-3 ${
-                  day.toDateString() === new Date().toDateString() ? 'text-blue-600 font-semibold' : 'text-gray-700'
-                }`}>
-                  <div className="text-sm font-medium">
-                    {day.toLocaleDateString('es-ES', { weekday: 'short' })}
-                  </div>
-                  <div className="text-lg">
-                    {day.getDate()}
-                  </div>
-                </div>
-                
-                <div className="space-y-2 min-h-[300px]">
-                  {dayAppointments.map(appointment => 
-                    renderAppointmentCard(appointment)
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Render day view
-  const renderDayView = () => {
-    const dayAppointments = calendarData.sort((a, b) => 
-      a.horaInicio.localeCompare(b.horaInicio)
-    );
-
-    return (
-      <Card className="p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {currentDate.toLocaleDateString('es-ES', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </h3>
-          <p className="text-sm text-gray-600">
-            {dayAppointments.length} cita{dayAppointments.length !== 1 ? 's' : ''} programada{dayAppointments.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        
-        <div className="space-y-3">
-          {dayAppointments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No hay citas programadas para este día</p>
+      <Card>
+        <div className="animate-pulse p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="h-6 bg-gray-200 rounded w-32"></div>
+            <div className="flex space-x-2">
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
             </div>
-          ) : (
-            dayAppointments.map(appointment => 
-              renderAppointmentCard(appointment)
-            )
-          )}
-        </div>
-      </Card>
-    );
-  };
-
-  if (loading.appointments) {
-    return (
-      <Card className="p-8">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Cargando calendario...</span>
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {[...Array(42)].map((_, index) => (
+              <div key={index} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
         </div>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Calendar Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+    <Card>
+      <div className="p-4">
+        {/* Header del calendario */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
             <LoadingButton
               variant="outline"
               size="sm"
-              onClick={navigatePrevious}
+              onClick={() => navigateMonth(-1)}
             >
               <ChevronLeft className="w-4 h-4" />
             </LoadingButton>
             
-            <h2 className="text-xl font-semibold text-gray-900 min-w-[200px] text-center">
-              {getCalendarTitle()}
+            <h2 className="text-lg font-semibold text-gray-900">
+              {monthNames[currentMonth]} de {currentYear}
             </h2>
             
             <LoadingButton
               variant="outline"
               size="sm"
-              onClick={navigateNext}
+              onClick={() => navigateMonth(1)}
             >
               <ChevronRight className="w-4 h-4" />
             </LoadingButton>
           </div>
-          
-          <LoadingButton
-            variant="outline"
-            size="sm"
-            onClick={goToToday}
-          >
-            Hoy
-          </LoadingButton>
-        </div>
-        
-        {/* View Mode Switcher */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-1">
-          {[
-            { mode: 'month', label: 'Mes' },
-            { mode: 'week', label: 'Semana' },
-            { mode: 'day', label: 'Día' }
-          ].map(({ mode, label }) => (
+
+          <div className="flex items-center space-x-2">
             <LoadingButton
-              key={mode}
-              variant={viewMode === mode ? 'primary' : 'ghost'}
+              variant="outline"
               size="sm"
-              onClick={() => setViewMode(mode)}
-              className="rounded-md"
+              onClick={() => setSelectedDate(new Date())}
             >
-              {label}
+              Hoy
             </LoadingButton>
+            
+            {['Mes', 'Semana', 'Día'].map((mode) => (
+              <LoadingButton
+                key={mode}
+                variant={viewMode === mode ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode(mode)}
+              >
+                {mode}
+              </LoadingButton>
+            ))}
+          </div>
+        </div>
+
+        {/* Días de la semana */}
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {dayNames.map((day) => (
+            <div
+              key={day}
+              className="text-center text-sm font-medium text-gray-500 py-2"
+            >
+              {day}
+            </div>
           ))}
         </div>
-      </div>
 
-      {/* Calendar Content */}
-      <div>
-        {viewMode === 'month' && renderMonthView()}
-        {viewMode === 'week' && renderWeekView()}
-        {viewMode === 'day' && renderDayView()}
-      </div>
+        {/* Grilla del calendario */}
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((dayInfo, index) => {
+            const dayAppointments = getAppointmentsForDate(dayInfo.date);
+            const isToday = dayInfo.date.toDateString() === today.toDateString();
+            const isSelected = dayInfo.date.toDateString() === selectedDate.toDateString();
 
-      {/* Summary */}
-      <div className="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-        <span>
-          Total: {calendarData.length} cita{calendarData.length !== 1 ? 's' : ''}
-        </span>
-        <span>
-          Vista: {viewMode === 'month' ? 'Mensual' : viewMode === 'week' ? 'Semanal' : 'Diaria'}
-        </span>
+            return (
+              <div
+                key={index}
+                className={`
+                  min-h-[80px] p-2 border border-gray-200 rounded cursor-pointer
+                  transition-colors hover:bg-gray-50
+                  ${!dayInfo.isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+                  ${isToday ? 'ring-2 ring-blue-500' : ''}
+                  ${isSelected ? 'bg-blue-50' : ''}
+                `}
+                onClick={() => {
+                  setSelectedDate(dayInfo.date);
+                  onDateSelect?.(dayInfo.date);
+                }}
+              >
+                <div className="text-sm font-medium mb-1">
+                  {dayInfo.day}
+                </div>
+                
+                {dayAppointments.length > 0 && (
+                  <div className="space-y-1">
+                    {dayAppointments.slice(0, 2).map((apt) => (
+                      <div
+                        key={apt.id}
+                        className={`
+                          text-xs p-1 rounded truncate
+                          ${apt.estado === 'confirmada' ? 'bg-green-100 text-green-800' : ''}
+                          ${apt.estado === 'programada' ? 'bg-blue-100 text-blue-800' : ''}
+                          ${apt.estado === 'completada' ? 'bg-gray-100 text-gray-800' : ''}
+                        `}
+                      >
+                        {apt.paciente?.nombres} {apt.paciente?.apellidos}
+                      </div>
+                    ))}
+                    
+                    {dayAppointments.length > 2 && (
+                      <div className="text-xs text-gray-500">
+                        +{dayAppointments.length - 2} más
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

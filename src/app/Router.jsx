@@ -7,6 +7,8 @@ import { ClinicProvider } from '../features/clinics/store/clinicContext';
 import { DentistProvider } from '../features/dentists/store/dentistContext';
 import { PatientProvider } from '../features/patients/store/patientContext';
 import { ScheduleProvider } from '../features/schedule/store/scheduleContext';
+import { AppointmentProvider } from '../features/appointments/store/appointmentContext';
+import { PaymentProvider } from '../features/payments/store/paymentContext';
 import LoadingOverlay from '../shared/components/ui/LoadingOverlay';
 import { useGlobalLoading } from '../shared/contexts/GlobalLoadingContext';
 import Layout from '../shared/components/layout/Layout';
@@ -19,6 +21,8 @@ import DentistsPage from '../features/dentists/pages/DentistsPage';
 import PatientsPage from '../features/patients/pages/PatientsPage';
 import PatientDetailPage from '../features/patients/pages/PatientDetailPage';
 import SchedulePage from '../features/schedule/pages/SchedulePage';
+import AppointmentsPage from '../features/appointments/pages/AppointmentsPage';
+import PaymentsPage from '../features/payments/pages/PaymentsPage';
 
 const AppContent = () => {
   const { isGlobalOverlayVisible, globalOverlayMessage, hideGlobalOverlay } = useGlobalLoading();
@@ -99,7 +103,7 @@ const AppContent = () => {
             path="/appointments"
             element={
               <ProtectedRoute roles={['admin']}>
-                <div>Gestión de Citas (Próximamente)</div>
+                <AppointmentsPage />
               </ProtectedRoute>
             }
           />
@@ -108,7 +112,7 @@ const AppContent = () => {
             path="/payments"
             element={
               <ProtectedRoute roles={['admin']}>
-                <div>Gestión de Pagos (Próximamente)</div>
+                <PaymentsPage />
               </ProtectedRoute>
             }
           />
@@ -159,7 +163,11 @@ const AppRouter = () => {
               <DentistProvider>
                 <PatientProvider>
                   <ScheduleProvider>
-                    <AppContent />
+                    <AppointmentProvider>
+                      <PaymentProvider>
+                        <AppContent />
+                      </PaymentProvider>
+                    </AppointmentProvider>
                   </ScheduleProvider>
                 </PatientProvider>
               </DentistProvider>

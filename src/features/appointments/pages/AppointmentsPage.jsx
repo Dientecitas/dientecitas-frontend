@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Plus, Calendar, List, Grid3X3, RefreshCw } from 'lucide-react';
-import { useAppointmentContext } from '../store/appointmentContext';
-import { useAppointments } from '../hooks/useAppointments';
+import { Calendar, Clock, Edit, Eye, Grid3X3, List, Plus, RefreshCw, User } from 'lucide-react';
 import LoadingButton from '../../../shared/components/ui/LoadingButton';
-import Card from '../../../shared/components/ui/Card';
-import Modal from '../../../shared/components/ui/Modal';
 import LoadingOverlay from '../../../shared/components/ui/LoadingOverlay';
+import Modal from '../../../shared/components/ui/Modal';
 import PageLoader from '../../../shared/components/ui/PageLoader';
-import AppointmentStats from '../components/AppointmentStats';
-import AppointmentFilters from '../components/AppointmentFilters';
 import AppointmentCalendar from '../components/AppointmentCalendar';
-import AppointmentList from '../components/AppointmentList';
+import AppointmentFilters from '../components/AppointmentFilters';
 import AppointmentForm from '../components/AppointmentForm';
+import AppointmentList from '../components/AppointmentList';
+import AppointmentCards from '../components/AppointmentCards'; // Agregar import
+import AppointmentStats from '../components/AppointmentStats';
+import { useAppointments } from '../hooks/useAppointments';
+import { useAppointmentContext } from '../store/appointmentContext';
 
 // Mock data para testing
 const mockPatients = [
@@ -114,7 +113,7 @@ const AppointmentsPage = () => {
   } = useAppointments();
 
   // Show page loader on initial load
-  if (loading.appointments && !appointments.length) {
+  if (loading.appointments && appointments.length === 0) {
     return (
       <PageLoader 
         message="Cargando citas..." 
@@ -173,14 +172,29 @@ const AppointmentsPage = () => {
     fetchAppointments();
   };
 
+  const handleDateSelect = (date) => {
+    // Lógica para cuando se selecciona una fecha en el calendario
+    console.log('Fecha seleccionada:', date);
+  };
+
   const renderMainContent = () => {
     switch (ui.viewMode) {
       case 'calendar':
         return (
           <AppointmentCalendar
+            appointments={appointments}
+            onDateSelect={handleDateSelect}
+            onView={handleViewAppointment}
+            loading={loading.appointments}
+          />
+        );
+      case 'grid':
+        return (
+          <AppointmentCards
+            appointments={appointments}
             onView={handleViewAppointment}
             onEdit={handleEditAppointment}
-            onCancel={handleCancelClick}
+            loading={loading.appointments}
           />
         );
       case 'list':
@@ -209,26 +223,6 @@ const AppointmentsPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* View Mode Switcher */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <LoadingButton
-              variant={ui.viewMode === 'list' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="rounded-md"
-            >
-              <List className="w-4 h-4" />
-            </LoadingButton>
-            <LoadingButton
-              variant={ui.viewMode === 'calendar' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="rounded-md"
-            >
-              <Calendar className="w-4 h-4" />
-            </LoadingButton>
-          </div>
-
           <LoadingButton
             variant="outline"
             onClick={handleRefresh}
@@ -256,7 +250,40 @@ const AppointmentsPage = () => {
       <AppointmentFilters />
 
       {/* Contenido principal */}
-      {renderMainContent()}
+      <div className="space-y-6">
+        {/* Controles de vista */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900">
+            Citas ({appointments.length})
+          </h3>
+          <div className="flex items-center gap-2">
+            <LoadingButton
+              variant={ui.viewMode === 'grid' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </LoadingButton>
+            <LoadingButton
+              variant={ui.viewMode === 'list' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </LoadingButton>
+            <LoadingButton
+              variant={ui.viewMode === 'calendar' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+            >
+              <Calendar className="w-4 h-4" />
+            </LoadingButton>
+          </div>
+        </div>
+
+        {/* Contenido según vista seleccionada */}
+        {renderMainContent()}
+      </div>
 
       {/* Global loading overlay for operations */}
       <LoadingOverlay

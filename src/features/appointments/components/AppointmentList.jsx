@@ -266,28 +266,6 @@ const AppointmentList = ({
   return (
     <Card>
       <div className="space-y-4">
-        {/* Header con controles */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">
-            Citas ({pagination.total})
-          </h3>
-          <div className="flex items-center gap-2">
-            <LoadingButton
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode('cards')}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </LoadingButton>
-            <LoadingButton
-              variant="primary"
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="w-4 h-4" />
-            </LoadingButton>
-          </div>
-        </div>
 
         {/* Acciones masivas */}
         {selectedAppointments.length > 0 && (
@@ -317,7 +295,6 @@ const AppointmentList = ({
           <TableLoader rows={5} columns={8} />
         ) : appointments.length === 0 ? (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <div className="text-gray-500 mb-2">No se encontraron citas</div>
             <p className="text-sm text-gray-400">
               Intenta ajustar los filtros de búsqueda
@@ -359,7 +336,29 @@ const AppointmentList = ({
                   </th>
                   {showActions && (
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
+                      <div className="flex items-center justify-end gap-2">
+                        <span>Acciones</span>
+                        <div className="flex items-center gap-1 ml-2">
+                          <LoadingButton
+                            variant="outline"
+                            size="xs"
+                            onClick={() => setViewMode('cards')}
+                            title="Vista de tarjetas"
+                            className="p-1"
+                          >
+                            <Grid3X3 className="w-3 h-3" />
+                          </LoadingButton>
+                          <LoadingButton
+                            variant="primary"
+                            size="xs"
+                            onClick={() => setViewMode('list')}
+                            title="Vista de lista"
+                            className="p-1"
+                          >
+                            <List className="w-3 h-3" />
+                          </LoadingButton>
+                        </div>
+                      </div>
                     </th>
                   )}
                 </tr>
@@ -412,7 +411,6 @@ const AppointmentList = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                         <div>
                           <div className="text-sm text-gray-900">
                             {formatDate(appointment.fecha)}

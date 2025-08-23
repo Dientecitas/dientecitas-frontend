@@ -369,7 +369,7 @@ export const useAppointments = () => {
     } finally {
       setLoading('appointments', false);
     }
-  }, [filters, setAppointments, setLoading, setError, clearError]);
+  }, [filters, pagination, setAppointments, setLoading, setError, clearError]);
 
   // Crear nueva cita
   const createAppointment = useCallback(async (appointmentData) => {
@@ -672,10 +672,9 @@ export const useAppointments = () => {
 
   // Cargar datos iniciales
   useEffect(() => {
-    if (appointments.length === 0) {
-      fetchAppointments();
-    }
-  }, [fetchAppointments, appointments.length]);
+    // Solo cargar una vez al montar el componente
+    fetchAppointments();
+  }, []); // Solo ejecutar al montar el componente
 
   return {
     // Datos

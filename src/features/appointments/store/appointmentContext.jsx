@@ -61,7 +61,7 @@ const initialState = {
   
   // Estados de UI
   ui: {
-    viewMode: 'list', // 'list' | 'calendar' | 'cards'
+    viewMode: 'list', // 'list' | 'calendar' | 'grid'
     showFilters: false,
     selectedIds: [],
     modals: {
@@ -245,11 +245,15 @@ export const AppointmentProvider = ({ children }) => {
 
   // Guardar filtros en localStorage cuando cambien
   useEffect(() => {
-    localStorage.setItem('appointment-filters', JSON.stringify(state.filters));
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('appointment-filters', JSON.stringify(state.filters));
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [state.filters]);
 
   // Acciones
-  const actions = {
+  const actions = React.useMemo(() => ({
     // Datos
     setAppointments: (data, pagination) => {
       dispatch({ type: 'SET_APPOINTMENTS', payload: { data, pagination } });
@@ -330,12 +334,12 @@ export const AppointmentProvider = ({ children }) => {
     setActiveTab: (tab) => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
     }
-  };
+  }), []);
 
-  const value = {
+  const value = React.useMemo(() => ({
     ...state,
     ...actions
-  };
+  }), [state, actions]);
 
   return (
     <AppointmentContext.Provider value={value}>
