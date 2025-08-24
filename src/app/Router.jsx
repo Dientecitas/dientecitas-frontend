@@ -8,7 +8,9 @@ import { DentistProvider } from '../features/dentists/store/dentistContext';
 import { PatientProvider } from '../features/patients/store/patientContext';
 import { ScheduleProvider } from '../features/schedule/store/scheduleContext';
 import { AppointmentProvider } from '../features/appointments/store/appointmentContext';
+import { BookingProvider } from '../features/booking/store/bookingContext';
 import { PaymentProvider } from '../features/payments/store/paymentContext';
+import { PatientPortalProvider } from '../features/patient-portal/store/patientContext';
 import LoadingOverlay from '../shared/components/ui/LoadingOverlay';
 import { useGlobalLoading } from '../shared/contexts/GlobalLoadingContext';
 import Layout from '../shared/components/layout/Layout';
@@ -25,7 +27,10 @@ import AppointmentsPage from '../features/appointments/pages/AppointmentsPage';
 import PaymentsPage from '../features/payments/pages/PaymentsPage';
 import LandingPage from '../features/booking/pages/LandingPage';
 import BookingPage from '../features/booking/pages/BookingPage';
-import { BookingProvider } from '../features/booking/store/bookingContext';
+import PatientProtectedRoute from '../features/patient-portal/components/PatientProtectedRoute';
+import PatientAuthPage from '../features/patient-portal/pages/PatientAuthPage';
+import PatientDashboardPage from '../features/patient-portal/pages/PatientDashboardPage';
+import AppointmentHistoryPage from '../features/patient-portal/pages/AppointmentHistoryPage';
 
 const AppContent = () => {
   const { isGlobalOverlayVisible, globalOverlayMessage, hideGlobalOverlay } = useGlobalLoading();
@@ -41,6 +46,25 @@ const AppContent = () => {
           <Route path="/auth/login" element={<LoginPage />} />
           
           {/* Rutas protegidas */}
+          <Route path="/portal/auth" element={<PatientAuthPage />} />
+          <Route
+            path="/portal"
+            element={
+              <PatientProtectedRoute>
+                <PatientDashboardPage />
+              </PatientProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/citas"
+            element={
+              <PatientProtectedRoute>
+                <AppointmentHistoryPage />
+              </PatientProtectedRoute>
+            }
+          />
+          
+          {/* Ruta protegida básica */}
           <Route
             path="/dashboard"
             element={
@@ -171,7 +195,9 @@ const AppRouter = () => {
                     <AppointmentProvider>
                       <PaymentProvider>
                         <BookingProvider>
-                          <AppContent />
+                          <PatientPortalProvider>
+                            <AppContent />
+                          </PatientPortalProvider>
                         </BookingProvider>
                       </PaymentProvider>
                     </AppointmentProvider>

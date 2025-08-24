@@ -50,8 +50,7 @@ const Sidebar = () => {
     if (userRole === 'paciente') {
       return [
         ...commonItems,
-        { name: 'Reservar Cita', href: '/book-appointment', icon: Calendar },
-        { name: 'Mis Citas', href: '/my-appointments', icon: Clock }
+        { name: 'Reservar Cita', href: '/reservar/cita', icon: Calendar }
       ];
     }
 
