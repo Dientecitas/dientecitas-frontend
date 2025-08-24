@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, RefreshCw, Calendar, Grid3X3, List, BarChart3, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Calendar, Grid3X3, List, BarChart3, Settings, Filter, Download } from 'lucide-react';
 import { useScheduleContext } from '../store/scheduleContext';
 import { useSchedule } from '../hooks/useSchedule';
 import LoadingButton from '../../../shared/components/ui/LoadingButton';
@@ -22,7 +22,8 @@ const SchedulePage = () => {
     toggleModal,
     setSelectedTimeSlot,
     setViewMode,
-    setCalendarView
+    setCalendarView,
+    toggleFilters
   } = useScheduleContext();
 
   const { 
@@ -169,8 +170,110 @@ const SchedulePage = () => {
       {/* Estadísticas */}
       <ScheduleStats />
 
-      {/* Filtros */}
-      <ScheduleFilters />
+      {/* Controles de fecha y filtros */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 space-y-4">
+        {/* Distribución optimizada en grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          {/* Ir a fecha */}
+          <div className="lg:col-span-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <label className="text-sm font-medium text-gray-700">Ir a fecha:</label>
+            <input
+              type="date"
+              value={ui.selectedDate || new Date().toISOString().split('T')[0]}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Rango de fechas */}
+          <div className="lg:col-span-5 flex items-center gap-2">
+            <span className="text-sm text-gray-600">o rango:</span>
+            <input
+              type="date"
+              placeholder="dd/mm/yyyy"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <span className="text-sm text-gray-600">hasta</span>
+            <input
+              type="date"
+              placeholder="dd/mm/yyyy"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Controles de acción */}
+          <div className="lg:col-span-4 flex items-center justify-end gap-2">
+            <LoadingButton
+              variant="outline"
+              size="sm"
+              onClick={toggleFilters}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filtros
+            </LoadingButton>
+
+            <LoadingButton
+              variant="outline"
+              size="sm"
+              onClick={() => {/* Implementar export */}}
+              loading={loading.export}
+              loadingText="Exportando..."
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </LoadingButton>
+          </div>
+        </div>
+
+        {/* Segunda fila: Botones rápidos */}
+        <div className="flex flex-wrap items-center gap-2">
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setSelectedDate(today);
+            }}
+          >
+            Hoy
+          </LoadingButton>
+          
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date();
+              const startOfWeek = new Date(today);
+              const day = today.getDay();
+              const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+              startOfWeek.setDate(diff);
+              setSelectedDate(startOfWeek.toISOString().split('T')[0]);
+            }}
+          >
+            Esta Semana
+          </LoadingButton>
+          
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date();
+              const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+              setSelectedDate(startOfMonth.toISOString().split('T')[0]);
+            }}
+          >
+            Este Mes
+          </LoadingButton>
+        </div>
+
+        {/* Panel de filtros avanzados */}
+        {ui.showFilters && (
+          <div className="border-t pt-4">
+            <ScheduleFilters />
+          </div>
+        )}
+      </div>
 
       {/* Controles de vista */}
       <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border">

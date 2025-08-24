@@ -62,8 +62,10 @@ const initialState = {
   // Estados de UI
   ui: {
     viewMode: 'list', // 'list' | 'calendar' | 'grid'
+    calendarView: 'week', // 'day' | 'week' | 'month'
     showFilters: false,
     selectedIds: [],
+    selectedDate: new Date().toISOString().split('T')[0],
     modals: {
       create: false,
       edit: false,
@@ -221,6 +223,18 @@ const appointmentReducer = (state, action) => {
         ui: { ...state.ui, activeTab: action.payload }
       };
     
+    case 'SET_CALENDAR_VIEW':
+      return {
+        ...state,
+        ui: { ...state.ui, calendarView: action.payload }
+      };
+    
+    case 'SET_SELECTED_DATE':
+      return {
+        ...state,
+        ui: { ...state.ui, selectedDate: action.payload }
+      };
+    
     default:
       return state;
   }
@@ -333,6 +347,14 @@ export const AppointmentProvider = ({ children }) => {
     
     setActiveTab: (tab) => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
+    },
+    
+    setCalendarView: (view) => {
+      dispatch({ type: 'SET_CALENDAR_VIEW', payload: view });
+    },
+    
+    setSelectedDate: (date) => {
+      dispatch({ type: 'SET_SELECTED_DATE', payload: date });
     }
   }), []);
 

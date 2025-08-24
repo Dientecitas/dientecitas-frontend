@@ -1,4 +1,4 @@
-import { Calendar, Clock, Edit, Eye, Grid3X3, List, Plus, RefreshCw, User } from 'lucide-react';
+import { Calendar, Clock, Edit, Eye, Grid3X3, List, Plus, RefreshCw, User, Filter, Download } from 'lucide-react';
 import LoadingButton from '../../../shared/components/ui/LoadingButton';
 import LoadingOverlay from '../../../shared/components/ui/LoadingOverlay';
 import Modal from '../../../shared/components/ui/Modal';
@@ -7,7 +7,7 @@ import AppointmentCalendar from '../components/AppointmentCalendar';
 import AppointmentFilters from '../components/AppointmentFilters';
 import AppointmentForm from '../components/AppointmentForm';
 import AppointmentList from '../components/AppointmentList';
-import AppointmentCards from '../components/AppointmentCards'; // Agregar import
+import AppointmentCards from '../components/AppointmentCards';
 import AppointmentStats from '../components/AppointmentStats';
 import { useAppointments } from '../hooks/useAppointments';
 import { useAppointmentContext } from '../store/appointmentContext';
@@ -98,8 +98,11 @@ const AppointmentsPage = () => {
     ui,
     selectedAppointment,
     setViewMode,
+    setCalendarView,
+    setSelectedDate,
     toggleModal,
     closeAllModals,
+    toggleFilters,
     setSelectedAppointment
   } = useAppointmentContext();
 
@@ -246,42 +249,173 @@ const AppointmentsPage = () => {
       {/* Estadísticas */}
       <AppointmentStats />
 
-      {/* Filtros */}
-      <AppointmentFilters />
+      {/* Controles de fecha y filtros */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 space-y-4">
+        {/* Distribución optimizada en grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          {/* Ir a fecha */}
+          <div className="lg:col-span-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <label className="text-sm font-medium text-gray-700">Ir a fecha:</label>
+            <input
+              type="date"
+              value={ui.selectedDate || new Date().toISOString().split('T')[0]}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
 
-      {/* Contenido principal */}
-      <div className="space-y-6">
-        {/* Controles de vista */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">
-            Citas ({appointments.length})
-          </h3>
+          {/* Rango de fechas */}
+          <div className="lg:col-span-5 flex items-center gap-2">
+            <span className="text-sm text-gray-600">o rango:</span>
+            <input
+              type="date"
+              placeholder="dd/mm/yyyy"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <span className="text-sm text-gray-600">hasta</span>
+            <input
+              type="date"
+              placeholder="dd/mm/yyyy"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Controles de acción */}
+          <div className="lg:col-span-4 flex items-center justify-end gap-2">
+            <LoadingButton
+              variant="outline"
+              size="sm"
+              onClick={toggleFilters}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filtros
+            </LoadingButton>
+
+            <LoadingButton
+              variant="outline"
+              size="sm"
+              onClick={() => {/* Implementar export */}}
+              loading={loading.export}
+              loadingText="Exportando..."
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </LoadingButton>
+          </div>
+        </div>
+
+        {/* Segunda fila: Botones rápidos */}
+        <div className="flex flex-wrap items-center gap-2">
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setSelectedDate(today);
+            }}
+          >
+            Hoy
+          </LoadingButton>
+          
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date();
+              const startOfWeek = new Date(today);
+              const day = today.getDay();
+              const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+              startOfWeek.setDate(diff);
+              setSelectedDate(startOfWeek.toISOString().split('T')[0]);
+            }}
+          >
+            Esta Semana
+          </LoadingButton>
+          
+          <LoadingButton
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const today = new Date();
+              const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+              setSelectedDate(startOfMonth.toISOString().split('T')[0]);
+            }}
+          >
+            Este Mes
+          </LoadingButton>
+        </div>
+
+        {/* Panel de filtros avanzados */}
+        {ui.showFilters && (
+          <div className="border-t pt-4">
+            <AppointmentFilters />
+          </div>
+        )}
+      </div>
+
+      {/* Controles de vista */}
+      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Vista:</span>
           <div className="flex items-center gap-2">
+            <LoadingButton
+              variant={ui.viewMode === 'calendar' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Calendario
+            </LoadingButton>
             <LoadingButton
               variant={ui.viewMode === 'grid' ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setViewMode('grid')}
             >
-              <Grid3X3 className="w-4 h-4" />
+              <Grid3X3 className="w-4 h-4 mr-2" />
+              Grilla
             </LoadingButton>
             <LoadingButton
               variant={ui.viewMode === 'list' ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setViewMode('list')}
             >
-              <List className="w-4 h-4" />
-            </LoadingButton>
-            <LoadingButton
-              variant={ui.viewMode === 'calendar' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-            >
-              <Calendar className="w-4 h-4" />
+              <List className="w-4 h-4 mr-2" />
+              Lista
             </LoadingButton>
           </div>
         </div>
 
-        {/* Contenido según vista seleccionada */}
+        {ui.viewMode === 'calendar' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Período:</span>
+            <LoadingButton
+              variant={ui.calendarView === 'day' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setCalendarView('day')}
+            >
+              Día
+            </LoadingButton>
+            <LoadingButton
+              variant={ui.calendarView === 'week' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setCalendarView('week')}
+            >
+              Semana
+            </LoadingButton>
+            <LoadingButton
+              variant={ui.calendarView === 'month' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setCalendarView('month')}
+            >
+              Mes
+            </LoadingButton>
+          </div>
+        )}
+      </div>
+
+      {/* Contenido según vista seleccionada */}
+      <div className="space-y-4">
         {renderMainContent()}
       </div>
 
