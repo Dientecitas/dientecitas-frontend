@@ -23,6 +23,9 @@ import PatientDetailPage from '../features/patients/pages/PatientDetailPage';
 import SchedulePage from '../features/schedule/pages/SchedulePage';
 import AppointmentsPage from '../features/appointments/pages/AppointmentsPage';
 import PaymentsPage from '../features/payments/pages/PaymentsPage';
+import LandingPage from '../features/booking/pages/LandingPage';
+import BookingPage from '../features/booking/pages/BookingPage';
+import { BookingProvider } from '../features/booking/store/bookingContext';
 
 const AppContent = () => {
   const { isGlobalOverlayVisible, globalOverlayMessage, hideGlobalOverlay } = useGlobalLoading();
@@ -32,6 +35,9 @@ const AppContent = () => {
       <Layout>
         <Routes>
           {/* Rutas públicas */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/reservar" element={<LandingPage />} />
+          <Route path="/reservar/cita" element={<BookingPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           
           {/* Rutas protegidas */}
@@ -137,7 +143,6 @@ const AppContent = () => {
           />
 
           {/* Redirecciones */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Layout>
@@ -165,7 +170,9 @@ const AppRouter = () => {
                   <ScheduleProvider>
                     <AppointmentProvider>
                       <PaymentProvider>
-                        <AppContent />
+                        <BookingProvider>
+                          <AppContent />
+                        </BookingProvider>
                       </PaymentProvider>
                     </AppointmentProvider>
                   </ScheduleProvider>
